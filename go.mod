@@ -1,4 +1,4 @@
-module example.com/raytracing
+module github.com/bhaney/raytracing
 
 go 1.16
 

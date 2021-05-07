@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"math"
 	"math/rand"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"github.com/bhaney/raytracing/camera"
 	"github.com/bhaney/raytracing/env"
 	"github.com/bhaney/raytracing/ray"
+	"github.com/bhaney/raytracing/utils"
 	"github.com/golang/geo/r3"
 )
 
@@ -19,13 +19,13 @@ func ColorRay(r *ray.Ray, world env.Hittable, depth int) ray.Color {
 	rec := new(env.HitRecord)
 	// If we've exceed the ray bounce limit, no more light is gathered
 	if depth <= 0 {
-		return Color{0, 0, 0}
+		return ray.Color{0, 0, 0}
 	}
 	if world.Hit(r, 0.001, math.Inf(1), rec) { // Remember, Go is pass-by-value!
 		scattered := new(ray.Ray)
 		attenuation := new(ray.Color)
 		if rec.MatPtr.Scatter(r, scattered, rec, attenuation) {
-			resultVec := ray.ColorRay(scattered, world, depth-1)
+			resultVec := ColorRay(scattered, world, depth-1)
 			return ray.Color{attenuation.X * resultVec.X, attenuation.Y * resultVec.Y, attenuation.Z * resultVec.Z}
 		}
 		return ray.Color{0, 0, 0}
@@ -80,7 +80,7 @@ func RandomScene() env.HittableList {
 					world = append(world, &env.Sphere{center, 0.2, sphereMaterial})
 				} else if chooseMat < 0.95 {
 					// metal
-					albedo := ray.Color(utis.RandomVectorFromRange(0.5, 1.))
+					albedo := ray.Color(utils.RandomVectorFromRange(0.5, 1.))
 					fuzz := utils.RandomFromRange(0., 0.5)
 					sphereMaterial = &env.Metal{albedo, fuzz}
 					world = append(world, &env.Sphere{center, 0.2, sphereMaterial})
@@ -94,9 +94,9 @@ func RandomScene() env.HittableList {
 
 	material1 := env.Dielectric{1.5}
 	world = append(world, &env.Sphere{r3.Vector{0, 1, 0}, 1.0, &material1})
-	material2 := env.Lambertian{Color{0.4, 0.2, 0.1}}
+	material2 := env.Lambertian{ray.Color{0.4, 0.2, 0.1}}
 	world = append(world, &env.Sphere{r3.Vector{-4, 1, 0}, 1.0, &material2})
-	material3 := env.Metal{Color{0.7, 0.6, 0.5}, 0.0}
+	material3 := env.Metal{ray.Color{0.7, 0.6, 0.5}, 0.0}
 	world = append(world, &env.Sphere{r3.Vector{4, 1, 0}, 1.0, &material3})
 
 	return world
@@ -107,38 +107,40 @@ func RandomScene() env.HittableList {
 
 func main() {
 	// Image
-	aspectRatio := 3.0 / 2.0
-	imageWidth := 1200.
-	imageHeight := imageWidth / aspectRatio
-	samplesPerPixel := 500
-	maxDepth := 50
 	/*
-		aspectRatio := 16.0 / 9.0
-		imageWidth := 400.
+		aspectRatio := 3.0 / 2.0
+		imageWidth := 1200.
 		imageHeight := imageWidth / aspectRatio
-		samplesPerPixel := 100
+		samplesPerPixel := 500
 		maxDepth := 50
 	*/
+	aspectRatio := 16.0 / 9.0
+	imageWidth := 400.
+	imageHeight := imageWidth / aspectRatio
+	samplesPerPixel := 100
+	maxDepth := 50
 
 	// Camera
-	vfov := 20.
-	lookfrom := r3.Vector{13, 2, 3}
-	lookat := r3.Vector{0, 0, 0}
-	vup := r3.Vector{0, 1, 0}
-	distToFocus := 10.0
-	aperture := 0.1
 	/*
-		lookfrom := r3.Vector{3, 3, 2}
-		lookat := r3.Vector{0, 0, -1}
+		vfov := 20.
+		lookfrom := r3.Vector{13, 2, 3}
+		lookat := r3.Vector{0, 0, 0}
 		vup := r3.Vector{0, 1, 0}
-		distToFocus := lookfrom.Sub(lookat).Norm()
+		distToFocus := 10.0
 		aperture := 0.1
 	*/
+	vfov := 20.
+	lookfrom := r3.Vector{3, 3, 2}
+	lookat := r3.Vector{0, 0, -1}
+	vup := r3.Vector{0, 1, 0}
+	distToFocus := lookfrom.Sub(lookat).Norm()
+	aperture := 0.1
 
 	cam := camera.NewCamera(aspectRatio, vfov, aperture, distToFocus, lookfrom, lookat, vup)
 
 	// World
-	world := RandomScene()
+	//world := RandomScene()
+	world := PracticeScene()
 	// Render
 
 	fmt.Printf("P3\n %d %d\n255\n", int(imageWidth), int(imageHeight))
@@ -146,7 +148,7 @@ func main() {
 	for j := int(imageHeight) - 1; j >= 0; j-- {
 		fmt.Fprintf(os.Stderr, "\rScanlines remaining: %d \n", j)
 		for i := int(imageWidth) - 1; i >= 0; i-- {
-			c := Color{0, 0, 0}
+			c := ray.Color{0, 0, 0}
 			for s := 0; s < samplesPerPixel; s++ {
 				u := (float64(i) + rand.Float64()) / float64(imageWidth-1)
 				v := (float64(j) + rand.Float64()) / float64(imageHeight-1)
