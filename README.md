@@ -4,7 +4,7 @@
 
 `go install github.com/bhaney/raytracing`
 
-`go run raytracing.go`
+`go run raytracing.go > output.ppm`
 
 ## Sources
 
