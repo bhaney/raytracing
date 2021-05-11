@@ -6,7 +6,7 @@
 
 `go run raytracing.go > output.ppm`
 
-![cover photo](https://raw.githubusercontent.com/bhaney/raytracing/master/cover.ppm)
+![cover photo](https://raw.githubusercontent.com/bhaney/raytracing/master/cover.png)
 
 ## Sources
 
